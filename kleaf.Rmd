@@ -1,0 +1,394 @@
+---
+title: "Untitled"
+author: "Shane Dewees"
+date: "5/6/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(lubridate)
+library(janitor)
+library(segmented)
+```
+
+```{r}
+my_files <- list.files(here("data", "ibuttons"), pattern = ".csv$", recursive = TRUE, full.names = TRUE)
+temperatures <- read_csv(my_files, skip = 14, id = "tree") %>%
+  rename(date = `Date/Time`) %>% 
+  mutate(tree = str_sub(tree, start = -9),
+         tree = str_remove(tree, "/"),
+         tree = str_remove(tree, ".csv"),
+         Value = str_remove(Value, "C,"),
+         temperature = as.numeric(Value),
+         date = mdy(date),
+         time = hms(Unit)) %>% 
+  filter(date == ymd("2022-05-18")) %>% 
+  mutate(date_time = as.POSIXct(paste(date, Unit), format = "%Y-%m-%d %H:%M:%S")) %>% 
+  separate(tree, into = c("tree_id", "branch")) %>% 
+  mutate(tree_id = as.numeric(tree_id),
+         branch = as.numeric(branch))
+
+max_temperatures <- temperatures %>% 
+  group_by(tree_id, branch) %>% 
+  filter(temperature >= 25) %>% 
+  mutate(max_temp = max(temperature, na.rm = TRUE)) %>% 
+  filter(date_time == min(date_time) | temperature == max_temp) %>% 
+  mutate(heat_up = max(date_time) - min(date_time),
+         heat_up = as.numeric(heat_up))%>% 
+  ungroup() %>% 
+  dplyr::select(tree_id, branch,, max_temp, heat_up)
+
+ggplot(temperatures, aes(x = date_time, y = temperature, col = as.factor(branch)))+
+  geom_point()+
+  facet_wrap(~tree_id)
+
+ggplot(max_temperatures, aes(x = as.factor(tree_id), y = temperature, col = as.factor(tree_id)))+
+  geom_jitter()
+ggplot(max_temperatures, aes(x = as.factor(tree_id), y = hour, col = as.factor(tree_id))) +
+  geom_jitter()
+```
+
+
+```{r}
+control_postfire_leaf_area <- read.csv(here("data", "control_postburn_leafarea.csv")) %>% 
+  separate(Slice, into = c("tree_id", "branch"), sep = "_") %>% 
+  group_by(tree_id, branch) %>% 
+  summarise(leaf_area = sum(leaf_area))
+
+kleaf_control <- read.csv(here("data", "control_kleaf.csv")) %>% 
+  mutate(numbr = as.character(numbr), 
+         treatment = "control") %>% 
+  separate(col = numbr, into = c("tree_id", "branch", "rep")) %>% 
+  full_join(control_postfire_leaf_area, by = c("tree_id", "branch")) %>% 
+  mutate(rep = "1",
+         leaf_area.x = case_when(is.na(leaf_area.x) == TRUE ~ leaf_area.y,
+                                 TRUE ~ leaf_area.x),
+         burn_treatment = case_when(is.na(leaf_area.y) == TRUE ~ "preburn",
+                               is.na(leaf_area.y) == FALSE ~ "postburn"),
+    leaf_area = leaf_area.x/10000,
+    kleaf_per_area = k.g.s.MPa/leaf_area) %>% 
+  dplyr::select(!"leaf_area.x" & !"leaf_area.y")
+  
+
+
+ggplot(kleaf_control, aes(burn_treatment, kleaf_per_area, col = tree_id))+
+  geom_jitter()
+
+postbud_postfire_leaf_area <- read.csv(here("data", "postbud_postburn_leafarea.csv")) %>%
+  separate(Slice, into = c("tree_id", "branch", "rep"), sep = "_") %>% 
+  group_by(tree_id, branch, rep) %>% 
+  summarise(leaf_area = sum(leaf_area))
+
+kleaf_postbud <- read.csv(here("data", "postbud_kleaf.csv")) %>% 
+  mutate(numbr = as.character(numbr),
+         treatment = "postbud") %>% 
+  separate(col = numbr, into = c("tree_id", "branch", "rep"),) %>%
+  full_join(postbud_postfire_leaf_area, by = c("tree_id", "branch", "rep")) %>%  
+  mutate(rep = case_when(is.na(rep) == TRUE ~ "1",
+                         TRUE ~ rep),
+         leaf_area.x = case_when(is.na(leaf_area.x) == TRUE ~ leaf_area.y,
+                                 TRUE ~ leaf_area.x),
+         burn_treatment = case_when(is.na(leaf_area.y) == TRUE ~ "preburn",
+                                    is.na(leaf_area.y) == FALSE ~ "postburn"),
+         leaf_area = leaf_area.x/10000,
+    kleaf_per_area = k.g.s.MPa/leaf_area) %>%
+  dplyr::select(!"leaf_area.x" & !"leaf_area.y")
+
+ggplot(kleaf_postbud, aes(burn_treatment, kleaf_per_area, col = tree_id))+
+  geom_jitter()
+
+kleaf_prebud <- read.csv(here("data", "prebud_kleaf.csv")) %>% 
+  mutate(numbr = as.character(numbr),
+         treatment = "prebud") %>% 
+  separate(col = numbr, into = c("tree_id", "branch", "rep")) %>% 
+  mutate(rep = "1",
+         burn_treatment = "preburn",
+         leaf_area = leaf_area/10000,
+    kleaf_per_area = k.g.s.MPa/leaf_area)
+
+ggplot(kleaf_prebud, aes(tree_id, kleaf_per_area, col = tree_id))+
+  geom_jitter()
+
+kleaf <- rbind(kleaf_control, kleaf_postbud) %>% 
+  rbind(kleaf_prebud) %>% 
+  mutate(tree_id = as.numeric(tree_id),
+         branch = as.numeric(branch),
+         rep = as.numeric(rep)) %>% 
+  dplyr::select(tree_id, branch, rep, treatment, burn_treatment, kleaf_per_area, leaf_area)
+
+ggplot(kleaf, aes(treatment, kleaf_per_area)) +
+  geom_jitter() +
+  facet_wrap(~burn_treatment)+
+  theme_classic()
+
+ggplot(kleaf, aes(treatment, leaf_area, col = tree_id)) +
+  geom_jitter() +
+  facet_wrap(~burn_treatment)
+
+```
+
+```{r}
+preburn <- kleaf %>% 
+  filter(burn_treatment == "preburn")
+postburn <- kleaf %>% 
+  filter(burn_treatment == "postburn")
+TukeyHSD(aov(kleaf_per_area~treatment, data = preburn))
+t.test(kleaf_per_area~treatment, data = postburn)
+```
+
+
+```{r}
+kleaf_temp <- kleaf %>% 
+  right_join(max_temperatures, by = c("tree_id", "branch")) %>% 
+  filter(kleaf_per_area < 0.75)
+summary(lm(kleaf_per_area~max_temp, data = kleaf_temp))
+summary(lm(kleaf_per_area~max_temp*heat_up, data = kleaf_temp))
+ggplot(kleaf_temp, aes(x = max_temp, y = kleaf_per_area, col = heat_up))+
+  geom_point() +
+  geom_smooth(method = "lm")+
+  theme_classic()
+ggplot(kleaf_temp, aes(x = duration, y = kleaf_per_area))+
+  geom_point() + 
+  geom_smooth(method = "lm")
+ggplot(kleaf_temp, aes(x = temp_sum, y = kleaf_per_area))+
+  geom_point() + 
+  geom_smooth(method = "lm")
+
+ggplot(kleaf_temp, aes(x = heat_up, y = kleaf_per_area, col = max_temp))+
+  geom_point() +
+  #geom_smooth(method = "lm")+
+  theme_classic()
+```
+
+
+
+
+```{r}
+prebud_kstem <- read.csv(here("data", "prebud_kstem.csv")) %>% 
+  mutate(treatment = "prebud") %>% 
+   separate(t.day, into = c("day", "time")) %>% 
+  mutate(burn_treatment = "preburn") %>% 
+  filter(P.MPa == 2)
+postbud_kstem <- read.csv(here("data", "postbud_kstem.csv")) %>% 
+  mutate(treatment = "postbud") %>% 
+  separate(t.day, into = c("day", "time")) %>% 
+  filter(day != 129) %>% 
+  mutate(burn_treatment = case_when(day == 127 ~ "preburn",
+                                    day == 140 ~ "postburn"))
+control_kstem <- read.csv(here("data", "control_kstem.csv")) %>% 
+  separate(t.day, into = c("day", "time")) %>% 
+  mutate(treatment = "control", 
+         burn_treatment = "postburn")
+
+kstem <- rbind(prebud_kstem, postbud_kstem) %>% 
+  rbind(control_kstem) %>% 
+  separate(numbr, into = c("tree_id", "branch", "rep")) %>%
+  rename(kstem = Ks.g.s.MPa.mm) %>% 
+  mutate(kstem = abs(kstem),
+         tree_id = as.numeric(tree_id),
+         branch = as.numeric(branch),
+         rep = 1) %>% 
+  filter(kstem <2) %>% 
+  dplyr::select(tree_id, branch, rep, treatment, burn_treatment, kstem, d.mm)
+
+ggplot(kstem, aes(treatment, kstem, col = treatment)) +
+  geom_jitter() +
+  facet_wrap(~burn_treatment) +
+  theme_classic()
+```
+
+```{r}
+kstem_preburn <- kstem %>% 
+  filter(burn_treatment == "preburn")
+kstem_postburn <- kstem %>% 
+  filter(burn_treatment == "postburn")
+t.test(kstem~treatment, data = kstem_preburn)
+t.test(kstem~treatment, data = kstem_postburn)
+```
+
+```{r}
+kstem_temp <-  kstem %>% 
+  right_join(max_temperatures, by = c("tree_id", "branch"))
+ggplot(kstem_temp, aes(x = max_temp, y = kstem))+
+  geom_point() +
+  geom_smooth(method = "lm")+
+  theme_classic()
+
+summary(lm(kstem~max_temp, data = kstem_temp))
+
+ggplot(kstem_temp, aes(x = d.mm, y = kstem, col = max_temp))+
+  geom_point()  
+  geom_smooth(method = "lm")
+
+summary(lm(kstem~max_temp*d.mm, data = kstem_temp))
+
+ggplot(kstem_temp, aes(x = max_temp, y = d.mm, col = kstem))+
+  geom_point()
+```
+
+
+```{r}
+kstem_kleaf <- kstem %>%  
+  dplyr::select(tree_id, branch, rep, treatment, burn_treatment, kstem) %>% 
+  right_join(kleaf, by = c("tree_id", "branch", "rep", "treatment", "burn_treatment")) %>% 
+  filter(burn_treatment == "postburn") %>% 
+  drop_na()
+
+ggplot(kstem_kleaf, aes(x = kleaf_per_area, y = kstem))+
+  geom_point()+
+  geom_smooth(method = "lm") +
+  theme_classic()
+
+kstem_kleaf_burn <- kstem_kleaf %>% 
+  filter(treatment == "postbud") %>% 
+  filter(kleaf_per_area <0.3)
+
+ggplot(kstem_kleaf_burn, aes(x = kleaf_per_area, y = kstem))+
+  geom_point()+
+  geom_smooth(method = "lm") +
+  theme_classic()
+
+summary(lm(kstem~kleaf_per_area, data = kstem_kleaf_burn))
+```
+
+
+```{r}
+stem_diameters <- read.csv(here("data", "stem_diameter.csv")) 
+
+sa_la <- kleaf %>% 
+  dplyr::select(tree_id, branch, leaf_area, treatment, burn_treatment) %>%
+  mutate(tree_id = as.numeric(tree_id),
+         branch = as.numeric(branch)) %>% 
+  right_join(stem_diameters, by = c("tree_id", "branch", "treatment")) %>% 
+  mutate(stem_area = pi * (diameter/2)^2,
+         la_sa = leaf_area/stem_area)
+
+ggplot(sa_la, aes(x = treatment, y = la_sa, col = treatment)) +
+  geom_jitter()+
+  facet_wrap(~burn_treatment)
+
+la_sa_preburn <- sa_la %>% 
+  filter(burn_treatment == "preburn")
+la_sa_postburn <- sa_la %>% 
+  filter(burn_treatment == "postburn")
+
+TukeyHSD(aov(la_sa~treatment, data = la_sa_preburn))
+t.test(la_sa~treatment, data = la_sa_postburn)
+```
+
+
+```{r}
+sapflow_9 <- read.csv(here("data", "sap_flow", "tree_9", "sapflow.csv")) %>%
+  rename(one = TOA5..31221...CR1000X...31221...CR1000X.Std.05.01...CPU.sap_flow.CR1X...24332...Sap_Flow_Data.) %>% 
+  separate(col = one, into = c("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"), sep = ",") %>% 
+  row_to_names(row_number = 1) %>% 
+  slice(-1) %>% 
+  slice(-1) %>% 
+  mutate(date_time = ymd_hms(TIMESTAMP),
+         sapflow_outer = as.numeric(`"SFD_Outer"`))
+
+ggplot(sapflow_9, aes(date_time, sapflow_outer))+
+  geom_point()
+
+sapflow_47 <- read.csv(here("data", "sap_flow", "tree_47", "sapflow_47.csv")) %>% 
+  rename(one = TOA5..31407...CR1000X...31407...CR1000X.Std.05.01...CPU.sap_flow.CR1X...24332...Sap_Flow_Data.) %>% 
+  separate(col = one, into = c("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"), sep = ",") %>% 
+  row_to_names(row_number = 1) %>% 
+  slice(-1) %>% 
+  slice(-1) %>% 
+  mutate(date_time = ymd_hms(TIMESTAMP),
+         sapflow_outer = as.numeric(`"SFD_Outer"`))
+
+ggplot(sapflow_47, aes(date_time, sapflow_outer))+
+  geom_point()
+
+sapflow_72 <- read.csv(here("data", "sap_flow", "tree_72", "sapflow_72.csv")) %>% 
+  rename(one = TOA5..31219...CR1000X...31219...CR1000X.Std.05.01...CPU.sap_flow.CR1X...24332...Sap_Flow_Data.) %>% 
+  separate(col = one, into = c("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"), sep = ",") %>% 
+  row_to_names(row_number = 1) %>% 
+  slice(-1) %>% 
+  slice(-1) %>% 
+  mutate(date_time = ymd_hms(TIMESTAMP),
+         sapflow_outer = as.numeric(`"SFD_Outer"`))
+
+ggplot(sapflow_72, aes(date_time, sapflow_outer))+
+  geom_point()
+
+sapflow_171 <- read.csv(here("data", "sap_flow", "tree_171", "sapflow_171.csv")) %>% 
+  rename(one = TOA5..31217...CR1000X...31217...CR1000X.Std.05.01...CPU.sap_flow.CR1X...24332...Sap_Flow_Data.) %>% 
+  separate(col = one, into = c("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"), sep = ",") %>% 
+  row_to_names(row_number = 1) %>% 
+  slice(-1) %>% 
+  slice(-1) %>% 
+  mutate(date_time = ymd_hms(TIMESTAMP),
+         sapflow_outer = as.numeric(`"SFD_Outer"`))
+
+ggplot(sapflow_171, aes(date_time, sapflow_outer))+
+  geom_point()
+
+sapflow_184 <- read.csv(here("data", "sap_flow", "tree_184", "sapflow_184.csv")) %>% 
+  rename(one = TOA5..25932...CR1000X...25932...CR1000X.Std.05.01...CPU.sap_flow.CR1X...24332...Sap_Flow_Data.) %>% 
+  separate(col = one, into = c("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"), sep = ",") %>% 
+  row_to_names(row_number = 1) %>% 
+  slice(-1) %>% 
+  slice(-1) %>% 
+  mutate(date_time = ymd_hms(TIMESTAMP),
+         sapflow_outer = as.numeric(`"SFD_Outer"`))
+
+ggplot(sapflow_184, aes(date_time, sapflow_outer))+
+  geom_point()
+
+sapflow_208 <- read.csv(here("data", "sap_flow", "tree_208", "sapflow_208.csv")) %>% 
+  rename(one = TOA5..31220...CR1000X...31220...CR1000X.Std.05.01...CPU.sap_flow.CR1X...24332...Sap_Flow_Data.) %>% 
+  separate(col = one, into = c("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"), sep = ",") %>% 
+  row_to_names(row_number = 1) %>% 
+  slice(-1) %>% 
+  slice(-1) %>% 
+  mutate(date_time = ymd_hms(TIMESTAMP),
+         sapflow_outer = as.numeric(`"SFD_Outer"`),
+         sapflow_inner = as.numeric(`"SFD_Inner"`))
+
+ggplot(sapflow_208, aes(date_time, sapflow_inner))+
+  geom_point()
+
+sapflow_216 <- read.csv(here("data", "sap_flow", "tree_216", "sapflow_216.csv")) %>% 
+  rename(one = TOA5..31406...CR1000X...31406...CR1000X.Std.05.01...CPU.sap_flow.CR1X...24332...Sap_Flow_Data.) %>% 
+  separate(col = one, into = c("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"), sep = ",") %>% 
+  row_to_names(row_number = 1) %>% 
+  slice(-1) %>% 
+  slice(-1) %>% 
+  mutate(date_time = ymd_hms(TIMESTAMP),
+         sapflow_outer = as.numeric(`"SFD_Outer"`),
+         sapflow_inner = as.numeric(`"SFD_Inner"`))
+
+ggplot(sapflow_216, aes(date_time, sapflow_outer))+
+  geom_point()
+
+sapflow_977 <- read.csv(here("data", "sap_flow", "tree_977", "sapflow_977.csv")) %>% 
+  rename(one = TOA5..25922...CR1000X...25922...CR1000X.Std.05.01...CPU.sap_flow.CR1X...24332...Sap_Flow_Data.) %>% 
+  separate(col = one, into = c("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"), sep = ",") %>% 
+  row_to_names(row_number = 1) %>% 
+  slice(-1) %>% 
+  slice(-1) %>% 
+  mutate(date_time = ymd_hms(TIMESTAMP),
+         sapflow_outer = as.numeric(`"SFD_Outer"`),
+         sapflow_inner = as.numeric(`"SFD_Inner"`))
+
+ggplot(sapflow_977, aes(date_time, sapflow_outer))+
+  geom_point()
+```
+
+```{r}
+gsw <- read.csv(here("data", "cleaveland_gsw", "2022-05-04", "cleaveland_gsw_shane_2022_05_04T20_27_55_436Z_1.csv")) %>% 
+  row_to_names(row_number = 1) %>% 
+  slice(-1) %>% 
+  mutate(gsw = as.numeric(gsw))
+
+
+ggplot(gsw, aes(x = treatment, y = gsw))+
+  geom_jitter()
+```
+

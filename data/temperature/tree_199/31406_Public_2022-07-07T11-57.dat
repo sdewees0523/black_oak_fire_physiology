@@ -1,0 +1,5 @@
+"TOA5","31406","CR1000X","31406","CR1000X.Std.05.01","CPU:1000x_sampling.CR1X","63056","Public"
+"TIMESTAMP","RECORD","BattV","PTemp_C","Temp_C(1)","Temp_C(2)","Temp_C(3)","Temp_C(4)","Temp_C(5)"
+"TS","RN","Volts","Deg C","Deg C","Deg C","Deg C","Deg C","Deg C"
+"","","","","","","","",""
+"2022-07-07 11:57:39.635",16,0,20.73065,"NAN","NAN","NAN","NAN","NAN"

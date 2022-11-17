@@ -1,0 +1,5 @@
+"TOA5","31406","CR1000X","31406","CR1000X.Std.05.01","CPU:1000x_sampling.CR1X","63056","DataTableInfo"
+"TIMESTAMP","RECORD","DataTableName(1)","SkippedRecord","DataRecordSize(1,1)","DataRecordSize(1,2)","SecsPerRecord","DataFillDays(1,1)","DataFillDays(1,2)","DataFilled(1,1)","DataFilled(1,2)"
+"TS","RN","","","records","records","","days","days","",""
+"","","","","","","","","","",""
+"2022-07-07 11:56:16.444",17,"Table1",0,3096030,0,60,2150.021,0,"0.0 percent filled","0.0 percent filled"

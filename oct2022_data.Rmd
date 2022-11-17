@@ -1,0 +1,66 @@
+---
+title: "October data"
+author: "Shane Dewees"
+date: "2022-10-27"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(here)
+library(tidyverse)
+```
+
+```{r}
+kstem_oct <- read.csv(here("data","2022-10-18 quke condcalc.csv")) %>% 
+  separate(numbr, into = c("plot", "tree", "branch"), sep = "_") %>% 
+  mutate(treatment = case_when(plot %in% c(181, 179, 196, 176, 177, 197, 195, 180)~ "prebud",
+                               plot %in% c(171, 200, 170, 199, 172, 173, 198, 175)~ "postbud",
+                               plot %in% c(154, 152, 153, 158, 157, 156, 87, 80, 83, 190, 191)~ "control")) %>% 
+  select(Ks.g.s.MPa.mm, "treatment") %>% 
+  rename(kstem = Ks.g.s.MPa.mm) %>% 
+  mutate(burn = case_when(treatment %in% c("prebud", "postbud")~ "burned",
+                          treatment == "control" ~ "not_burned"), 
+         kstem = kstem *-1)
+
+TukeyHSD(aov(kstem~treatment, data = kstem_oct))
+
+ggplot(kstem_oct, aes(x = treatment, y = kstem, col = burn)) + 
+  geom_jitter() + 
+  theme_classic()
+
+```
+
+```{r}
+leaf_area <- read.csv(here("data", "october_leaf_areas.csv")) %>% 
+  select(Plot_sample._tree, Total.Area) %>% 
+  separate(Plot_sample._tree, into = c("plot", "sample", "tree"), sep = "_") %>% 
+  rename(leaf_area = Total.Area) %>% 
+  mutate(tree = str_remove(tree, ".jpg"),
+         tree = as.numeric(tree),
+         leaf_area = leaf_area/10000) %>% 
+  group_by(plot, tree, sample) %>% 
+  summarise(leaf_area = sum(leaf_area))
+
+kleaf <- read.csv(here("data", "2022-10-18 quke condcalc kleaf.csv")) %>% 
+  select(numbr, k.g.s.MPa) %>% 
+  separate(numbr, into = c("plot", "tree", "sample")) %>% 
+  rename(kleaf = k.g.s.MPa) %>% 
+  mutate(tree = as.numeric(tree)) %>% 
+  left_join(leaf_area, by = c("plot", "tree", "sample")) %>% 
+  drop_na() %>% 
+  mutate(kleaf = kleaf/leaf_area,
+         treatment = case_when(plot %in% c(181, 179, 196, 176, 177, 197, 195, 180)~ "prebud",
+                               plot %in% c(171, 200, 170, 199, 172, 173, 198, 175)~ "postbud",
+                               plot %in% c(154, 152, 153, 158, 157, 156, 87, 80, 83, 190, 150, 191)~ "control"),
+         burned = case_when(treatment %in% c("prebud", "postbud")~ "burned",
+                          treatment == "control" ~ "not_burned")) %>% 
+  filter(kleaf < 3)
+
+TukeyHSD(aov(kleaf~treatment, kleaf))
+
+ggplot(kleaf, aes(x = treatment, y = kleaf, col = burned)) + 
+  geom_jitter() + 
+  theme_classic()
+```
+

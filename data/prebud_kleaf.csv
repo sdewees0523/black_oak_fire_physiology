@@ -1,0 +1,22 @@
+t.day,sp,numbr,P.MPa,nomID,stemID,k.g.s.MPa,r2,Pleaf.MPa,ver,plc,leaf_area
+128.3265504,quke_pre,72.1,0,quke_pre 72.1 0 MPa,quke_pre 72.1,4.50E-05,NA,-0.323,v18,NA,80.966
+128.3386583,quke_pre,72.2,0,quke_pre 72.2 0 MPa,quke_pre 72.2,0.000303823,NA,-0.172,v18,NA,86.854
+128.3480411,quke_pre,72.3,0,quke_pre 72.3 0 MPa,quke_pre 72.3,0.000606851,NA,-0.079,v18,NA,77.43
+128.3608568,quke_pre,77.1,0,quke_pre 77.1 0 MPa,quke_pre 77.1,0.00015623,NA,-0.065,v18,NA,54.456
+128.3713018,quke_pre,77.2,0,quke_pre 77.2 0 MPa,quke_pre 77.2,0.000468648,NA,-0.062,v18,NA,119.46
+128.3771157,quke_pre,77.3,0,quke_pre 77.3 0 MPa,quke_pre 77.3,0.000333085,NA,-0.048,v18,NA,73.903
+128.3831104,quke_pre,184.1,0,quke_pre 184.1 0 MPa,quke_pre 184.1,0.000145315,NA,-0.18,v18,NA,53.344
+128.3985369,quke_pre,184.2,0,quke_pre 184.2 0 MPa,quke_pre 184.2,0.000456641,NA,-0.07,v18,NA,147.501
+128.4058176,quke_pre,184.3,0,quke_pre 184.3 0 MPa,quke_pre 184.3,0.003384682,NA,-0.1,v18,NA,58.648
+128.4230124,quke_pre,111.1,0,quke_pre 111.1 0 MPa,quke_pre 111.1,0.000246012,NA,-0.065,v18,NA,42.418
+128.4281985,quke_pre,111.2,0,quke_pre 111.2 0 MPa,quke_pre 111.2,0.000435498,NA,-0.03,v18,NA,46.606
+128.4369578,quke_pre,111.3,0,quke_pre 111.3 0 MPa,quke_pre 111.3,0.000107608,NA,-0.27,v18,NA,175.415
+128.4548203,quke_pre,148.1,0,quke_pre 148.1 0 MPa,quke_pre 148.1,0.00047011,NA,-0.034,v18,NA,24.926
+128.4621716,quke_pre,148.2,0,quke_pre 148.2 0 MPa,quke_pre 148.2,0.000177879,NA,-0.098,v18,NA,42.083
+128.4721897,quke_pre,148.3,0,quke_pre 148.3 0 MPa,quke_pre 148.3,0.000203711,NA,-0.107,v18,NA,117.867
+128.4801875,quke_pre,94.1,0,quke_pre 94.1 0 MPa,quke_pre 94.1,0.000622141,NA,-0.035,v18,NA,73.25
+128.493958,quke_pre,94.2,0,quke_pre 94.2 0 MPa,quke_pre 94.2,0.000224748,NA,-0.084,v18,NA,80.271
+128.5064979,quke_pre,94.3,0,quke_pre 94.3 0 MPa,quke_pre 94.3,0.000772488,NA,-0.047,v18,NA,61.216
+128.5144941,quke_pre,171.1,0,quke_pre 171.1 0 MPa,quke_pre 171.1,0.001339991,NA,-0.026,v18,NA,106.357
+128.5210383,quke_pre,171.2,0,quke_pre 171.2 0 MPa,quke_pre 171.2,0.000885958,NA,-0.041,v18,NA,193.46
+128.5332557,quke_pre,171.3,0,quke_pre 171.3 0 MPa,quke_pre 171.3,0.001044616,NA,-0.057,v18,NA,94.932
